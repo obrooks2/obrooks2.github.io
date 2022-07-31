@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<style>
+.buttons-div {
+    text-align: center;
+    
+}
+.button-fancy {
+    border-radius: 5px;
+    padding: .5em 1.5em;
+    width: 22%;
+    font-size: medium;
+}
+.button-fancy:active {     
+    background-color:darkgray;    
+}
+h2 {
+    color:darkslategray
+}
+
+.check_boxes div {
+  display: inline;
+  /* Child style. */
+}
+
+</style>
+
+<script type="text/javascript">
+
+  var continents = ['Asia', 'Europe', 'Africa', 'North America', 'South America', 'Oceania']
+
+  function removeItemAll(arr, value) {
+    var i = 0;
+    while (i < arr.length) {
+      if (arr[i] === value) {
+        arr.splice(i, 1);
+      } else {
+        ++i;
+      }
+    }
+    return arr;
+  }
+
+  function getValue(value, box_id){
+      var c = document.getElementById(box_id).checked; //False
+      if (c) {
+        continents.push(value)
+      }
+      else {
+        removeItemAll(continents, value)
+      }
+
+      var t = document.getElementById("graph_title").innerHTML
+      if (t === "Indicator: Life Expectancy") {
+        load_svg("Life Expectancy")
+      }
+      else if (t === "Indicator: Population Density"){
+        load_svg("Population Density")
+      }
+      else if (t === "Indicator: GDP") {
+        load_svg("GDP")
+      }
+
+
+  }
+
+  // set the dimensions and margins of the graph
+  var margin = {top: 10, right: 100, bottom: 40, left: 100},
+      width = screen.width - margin.left - margin.right,
+      height = screen.height*.5 - margin.top - margin.bottom;
+  
+    function roundToTwo(num) {
+      return +(Math.round(num + "e+2")  + "e-2");
+  }
+
+  function next() {
+    var t = document.getElementById("graph_title").innerHTML
+    if (t === "Indicator: Life Expectancy") {
+      load_svg("Population Density")
+    }
+    else if (t === "Indicator: Population Density"){
+      load_svg("GDP")
+    }
+    else if (t === "Indicator: GDP") {
+      load_svg("Life Expectancy")
+    }
+  }
+
+  function back() {
+    var t = document.getElementById("graph_title").innerHTML
+    if (t === "Indicator: Life Expectancy") {
+      load_svg("GDP")
+    }
+    else if (t === "Indicator: Population Density"){
+      load_svg("Life Expectancy")
+    }
+    else if (t === "Indicator: GDP") {
+      load_svg("Population Density")
+    }
+  }
+  
+  
+  // append the svg object to the body of the page
+  function load_svg(indicator) {
+    if (indicator === "GDP") {
+      document.getElementById("indicator_desc").innerHTML = '"Per capita gross domestic product (GDP) is a financial metric that breaks down a country\'s <br>\
+      economic output per person and is calculated by dividing the GDP of a nation by its population. Per capita GDP is a global measure for gauging the <br>\
+      prosperity of nations and is used by economists to analyze the prosperity of a country based on its economic growth."'
+    }
+    else if (indicator === "Life Expectancy"){
+      document.getElementById("indicator_desc").innerHTML = '"Life expectancy is a statistical measure of the average time a person is expected to live. <br>\
+      According to the most recent data available from the Centers for Disease Control and Prevention, average life expectancy in the U.S. <br>\
+      is 78.6 years—76.1 years for men and 81.1 years for women."'
+    }
+    else if (indicator === "Population Density") {
+      document.getElementById("indicator_desc").innerHTML = '"Population density is measured via the average number of people living with a square kilometer of land area. <br>\
+      Population density data can be used to quantify demographic information and to assess relationships with ecosystems, human health, and infrastructure."'
+    }
+
+    document.getElementById("my_dataviz").innerHTML = "";
+      var svg = d3.select("#my_dataviz")
+        .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+    document.getElementById("graph_title").innerHTML = "Indicator: "+ indicator;
+
+    // Parse the Data
+    d3.csv("https://raw.githubusercontent.com/obrooks2/obrooks2.github.io/main/dataset.csv", function(data) {
+      
+      // default x axis for life expectancy
+      var x = d3.scaleLinear()
+        .domain([45, 90])
+        .range([ 0, width ]);
+      var xAxisText = "Average life expectancy (years)"
+      var colName = "life_expectancy"
+
+      if (indicator == "Population Density") {
+        x = d3.scaleLinear()
+        .domain([0, 19740])
+        .range([ 0, width ]);
+        xAxisText = "Population density (people per sq. km of land area)"
+        colName = "density"
+      }
+      if (indicator == "GDP") {
+        x = d3.scaleLinear()
+        .domain([200, 173690])
+        .range([ 0, width ]);
+        xAxisText = "Gross Domestic Product per Capita (USD)"
+        colName = "gdp"
+      }
+
+        svg.append("text")             
+        .attr("transform",
+              "translate(" + (width/2) + " ," + 
+                             (height + margin.top + 20) + ")")
+        .style("text-anchor", "middle")
+        .text(xAxisText);
+
+        // text label for the y axis
+        svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x",0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Covid-19 Deaths per 1 Million"); 
+      
+      svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
+  
+      // y axis for deaths
+      var y = d3.scaleLinear()
+        .domain([0, 6352])
+        .range([ height, 0]);
+      svg.append("g")
+        .call(d3.axisLeft(y));
+  
+      var color = d3.scaleOrdinal()
+      .domain(['Asia', 'Europe', 'Africa', 'North America', 'South America', 'Oceania'])
+      .range([ '#8931EF', '#F2CA19', '#FF00BD', '#0057E9', '#87E911', '#E11845'])
+  
+      var tooltip = d3.select("#my_dataviz")
+      .append("div")
+      .style("opacity", 0)
+      .attr("class", "tooltip")
+      .style("background-color", "white")
+      .style("border", "solid")
+      .style("border-width", "1px")
+      .style("border-radius", "5px")
+      .style("padding", "10px")
+      .style("position", "absolute")
+  
+      var mouseover = function(d) {
+        tooltip
+          .style("opacity", 1)
+      }
+  
+      var mousemove = function(d) {
+        tooltip
+          .html("<b>"+d.location+"</b><br> COVID-19 Mortality rate: " + 
+          roundToTwo(d.total_deaths_per_million/1000) +"%<br>" + 
+          indicator+": " +roundToTwo(d[colName]))
+          .style("left", (d3.mouse(this)[0]+90) + "px") 
+          .style("top", (d3.mouse(this)[1]) + "px")
+  
+      }
+  
+      var mouseleave = function(d) {
+        tooltip
+          .transition()
+          .duration(200)
+          .style("opacity", 0)
+      }
+  
+  
+      // Add dots
+      svg.append('g')
+        .selectAll("dot")
+        .data(data.filter(function(d,i){return continents.includes(d.continent)}))
+        .enter()
+        .append("circle")
+          .attr("cx", function (d) { return x(d[colName]); } )
+          .attr("cy", function (d) { return y(d.total_deaths_per_million); } )
+          .attr("r", 5)
+          .style("fill", function (d) { return color(d.continent) } )
+          .style("opacity", 0.3)
+          .style("stroke", "white")
+        .on("mouseover", mouseover )
+        .on("mousemove", mousemove )
+      .on("mouseleave", mouseleave )
+
+      
+    })
+  }
+
+  
+  
+  </script>
+<title>obrooks2 visualization</title>
+</head>
+<!-- Create a div where the graph will take place -->
+
+
+<body onload="load_svg('Life Expectancy')">
+<center><h1>Effects of Structural Risk Factors on COVID-19 Deaths</h1></center>
+<center><h2 id="graph_title">Indicator: Life Expectancy</h2></center>
+<center><span><p id="indicator_desc"></p></span></center>
+
+<div id="my_dataviz"></div>
+<center>
+  <p><i>Filter by continent:</i></p>
+  
+    <div class="container">
+      <label for="vehicle1">  <input onclick="getValue(this.value, this.id)" type="checkbox" id="vehicle1" name="vehicle1" value="Asia" checked>
+        Asia</label>
+      <label for="vehicle2">  <input onclick="getValue(this.value, this.id)" type="checkbox" id="vehicle2" name="vehicle2" value="Europe" checked>
+        Europe</label>
+      <label for="vehicle3">  <input onclick="getValue(this.value, this.id)" type="checkbox" id="vehicle3" name="vehicle3" value="Africa" checked>
+        Africa</label>
+      <label for="vehicle4">  <input onclick="getValue(this.value, this.id)" type="checkbox" id="vehicle4" name="vehicle4" value="North America" checked>
+        North America</label>
+      <label for="vehicle5">  <input onclick="getValue(this.value, this.id)" type="checkbox" id="vehicle5" name="vehicle5" value="South America" checked>
+        South America</label>
+      <label for="vehicle6"><input onclick="getValue(this.value, this.id)" type="checkbox" id="vehicle6" name="vehicle6" value="Oceania" checked> Oceania</label>
+    </div>
+    </center>
+    <br>
+    <br>
+
+<div class="buttons-div">
+<button type="button" class="button-fancy" onclick="next()"><  Back</button>
+<button type="button" class="button-fancy" onclick="back()">Next  ></button>
+</div>
+</body>
+
